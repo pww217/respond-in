@@ -8,6 +8,9 @@ sh = logging.StreamHandler()
 sh.setFormatter(formatter)
 logger.addHandler(sh)
 
+api_logger = logging.getLogger('linkedin_api')
+api_logger.setLevel(logging.DEBUG)
+
 def main():
 
   user = os.getenv('LKDIN_USER')
@@ -16,20 +19,35 @@ def main():
   # Authenticate using any Linkedin account credentials
   api = Linkedin(user, pw)
 
+  convos = json.dumps(api.get_conversations(), indent=2)
+  with open('convos.txt', 'w') as f:
+    f.write(convos)
 
+  one_convo = json.dumps(api.get_conversation(conversation_urn_id="2-M2QwZTU2OTUtYWE0OS00ODFkLWExMDktY2YxMDU1MDU1OTEyXzAxMg=="), indent=2)
+  with open('one_convo.txt', 'w') as f:
+    f.write(one_convo)
 
-  # GET a profile
-  details = json.dumps(api.get_conversation_details("urn:li:member:1100009813"), indent=2)
-  with open('details.txt', 'w') as f:
-    f.write(details)
+  profile = json.dumps(api.get_profile(public_id="irina-chernous-905483268", urn_id=None), indent=2)
+  with open('profile.txt', 'w') as f:
+    f.write(profile)
 
-"""   messages = json.dumps(api.get_conversations(), indent=2)
-  with open('messages.txt', 'w') as f:
-    f.write(messages)
-  
-  threads = json.dumps(api.get_conversation("urn:li:fsd_conversation:2-M2QwZTU2OTUtYWE0OS00ODFkLWExMDktY2YxMDU1MDU1OTEyXzAxMg=="), indent=2)
-  with open('threads.txt', 'w') as f:
-    f.write(threads) """
+  chat = json.dumps(api.get_conversation_details("ACoAAEGQ0VUB1QS0cJ-Xt-Us4VA8U7vuWjJ11Vc"), indent=2)
+  with open('chat.txt', 'w') as f:
+    f.write(chat)
 
 if __name__ == '__main__':
   main()
+
+
+  """
+  ...
+    "metadata": {
+    "unreadCount": 0
+  }
+
+  "elements": [
+    {
+      "read": true,
+      "totalEventCount": 4
+    }
+  """
