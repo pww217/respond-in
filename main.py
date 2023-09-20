@@ -13,25 +13,7 @@ api_logger = logging.getLogger("linkedin_api")
 api_logger.setLevel(logging.DEBUG)
 
 
-def get_convo_urns(convos):
-    all_urns = []
-    for c in convos:
-        urn = c["entityUrn"].split(":")[-1]
-        all_urns.append(urn)
-    return all_urns
-
-
-def check_recruiter_status(convos):
-    events = convos["elements"]["events"]
-    rstatus = events[0]["eventContent"][
-        "com.linkedin.voyager.messaging.event.MessageEvent"
-    ]["customContent"]["com.linkedin.voyager.messaging.event.message.InmailContent"][
-        "recruiterInmail"
-    ]
-    return rstatus
-
-
-def check_unreads(inbox):
+def get_unreads(inbox):
     unreads = []
     for message in inbox["elements"]:
         is_read = message["read"]
@@ -40,6 +22,43 @@ def check_unreads(inbox):
     with open("unreads.txt", "w") as f:
         f.write(json.dumps(unreads, indent=2))
     return unreads
+
+
+def get_convo_urns(convos):
+    all_urns = []
+    for c in convos:
+        urn = c["entityUrn"].split(":")[-1]
+        all_urns.append(urn)
+    return all_urns
+
+
+def get_message(message):
+    events = message["events"]  # list
+    # print(json.dumps(events, indent=2))
+    for e in events:
+        urn = e["entityUrn"].split(":")[-1]
+        content = e["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
+        #subject = content["subject"]
+        with open('content.txt', 'a') as f:
+            content_string = json.dumps(content, indent=2)
+            f.write(content_string)
+        try:
+            custom = content["customContent"]
+            is_recruiter = custom[
+                "com.linkedin.voyager.messaging.event.message.InmailContent"
+            ]["recruiterInmail"]
+        except:
+            is_recruiter = False
+        print(
+            f"Recruiter: {is_recruiter}"
+# Recruiter: {is_recruiter}"
+        )
+    # ["eventContent"][
+    #     "com.linkedin.voyager.messaging.event.MessageEvent"
+    # ]
+    # is_recruiter = content["customContent"][
+    #     "com.linkedin.voyager.messaging.event.message.InmailContent"
+    # ]["recruiterInmail"]
 
 
 def main():
@@ -56,12 +75,12 @@ def main():
     with open("inbox.txt", "r") as f:
         inbox = json.loads(f.read())
 
-    unreads = check_unreads(inbox)
+    unreads = get_unreads(inbox)
     pprint(f"Unread messages: {len(unreads)}")
 
-    # convos = api.get_conversations()
-    # with open('convos.txt', 'w') as f:
-    #   f.write(json.dumps(convos, indent=2))
+    for message in unreads:
+        output = get_message(message)
+        # print(json.dumps(output, indent=2))
 
 
 if __name__ == "__main__":
