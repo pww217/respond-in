@@ -12,34 +12,51 @@ logger.addHandler(sh)
 api_logger = logging.getLogger("linkedin_api")
 api_logger.setLevel(logging.DEBUG)
 
+"""
+is_sponsored = content["com.linkedin.voyager.messaging.event.message.SponsoredMessageContent"]
+message = content["attributedBody"]["text"]
+"""
 
-def get_unreads(inbox):
-    unreads = []
-    for message in inbox["elements"]:
+
+def get_needs_response(inbox):
+    """
+    Sorts out already-read, sponsored, or other non-recruiter messages.
+    Returns a list of unread messages from recruiters only
+    """
+    needs_response = []
+    for message in inbox:
         is_read = message["read"]
         if is_read == False:
-            unreads.append(message)
-    with open("unreads.txt", "w") as f:
-        f.write(json.dumps(unreads, indent=2))
-    return unreads
+            try:
+                for e in message["events"]:
+                    content = e["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
+                    try:
+                        if (
+                            content["customContent"][
+                                "com.linkedin.voyager.messaging.event.message.InmailContent"
+                            ]["inmailProductType"]
+                            == "RECRUITER"
+                        ):
+                            is_recruiter = True
+                            needs_response.append(content)
+                    except KeyError:
+                        is_recruiter = False
+            except KeyError:
+                continue
+    return needs_response
 
-
-def get_convo_urns(convos):
-    all_urns = []
-    for c in convos:
-        urn = c["entityUrn"].split(":")[-1]
-        all_urns.append(urn)
-    return all_urns
-
-
-def get_message(message):
-    events = message["events"]  # list
+def parse_message(messages):
     # print(json.dumps(events, indent=2))
-    for e in events:
+    for m in messages:
         urn = e["entityUrn"].split(":")[-1]
-        content = e["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
-        #subject = content["subject"]
-        with open('content.txt', 'a') as f:
+        content = e["eventContent"][
+            "com.linkedin.voyager.messaging.event.MessageEvent"
+        ]["recruiterInmail"]
+        try:
+            subject = content["subject"]
+        except:
+            subject = None
+        with open("content.txt", "a") as f:
             content_string = json.dumps(content, indent=2)
             f.write(content_string)
         try:
@@ -47,18 +64,12 @@ def get_message(message):
             is_recruiter = custom[
                 "com.linkedin.voyager.messaging.event.message.InmailContent"
             ]["recruiterInmail"]
-        except:
+        except KeyError:
             is_recruiter = False
         print(
-            f"Recruiter: {is_recruiter}"
-# Recruiter: {is_recruiter}"
+            f"Recruiter: {is_recruiter} \
+              Subject: {subject}"
         )
-    # ["eventContent"][
-    #     "com.linkedin.voyager.messaging.event.MessageEvent"
-    # ]
-    # is_recruiter = content["customContent"][
-    #     "com.linkedin.voyager.messaging.event.message.InmailContent"
-    # ]["recruiterInmail"]
 
 
 def main():
@@ -73,14 +84,17 @@ def main():
     #  f.write(json.dumps(inbox, indent=2))
 
     with open("inbox.txt", "r") as f:
-        inbox = json.loads(f.read())
+        inbox = json.loads(f.read())["elements"]
 
-    unreads = get_unreads(inbox)
-    pprint(f"Unread messages: {len(unreads)}")
+    needs_response = get_needs_response(inbox)
+    pprint(f"Messages needing response: {len(needs_response)}")
 
-    for message in unreads:
-        output = get_message(message)
-        # print(json.dumps(output, indent=2))
+    with open("needs_response.txt", "w") as f:
+        f.write(json.dumps(needs_response, indent=2))
+
+    for message in needs_response:
+        parse_message(message)
+       
 
 
 if __name__ == "__main__":
