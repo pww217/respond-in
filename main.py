@@ -45,32 +45,11 @@ def get_needs_response(inbox):
                 continue
     return needs_response
 
-def parse_message(messages):
-    # print(json.dumps(events, indent=2))
-    for m in messages:
-        urn = e["entityUrn"].split(":")[-1]
-        content = e["eventContent"][
-            "com.linkedin.voyager.messaging.event.MessageEvent"
-        ]["recruiterInmail"]
-        try:
-            subject = content["subject"]
-        except:
-            subject = None
-        with open("content.txt", "a") as f:
-            content_string = json.dumps(content, indent=2)
-            f.write(content_string)
-        try:
-            custom = content["customContent"]
-            is_recruiter = custom[
-                "com.linkedin.voyager.messaging.event.message.InmailContent"
-            ]["recruiterInmail"]
-        except KeyError:
-            is_recruiter = False
-        print(
-            f"Recruiter: {is_recruiter} \
-              Subject: {subject}"
-        )
-
+def parse_message(message):
+    custom_content = message["customContent"]
+    subject = message["subject"]
+    text = message["attributedBody"]["text"].strip("\n")
+    print(f"Subject: {subject}\nText:\n{text}\n")
 
 def main():
     # user = os.getenv('LKDIN_USER')
