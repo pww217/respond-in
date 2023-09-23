@@ -23,21 +23,30 @@ def get_unread(inbox):
     Filters out already-read or sponsored messages.
     Returns a list of unread messages.
     """
-    needs_response = []
+    unread = []
     for message in inbox:
         is_read = message["read"]
         if is_read == False:
             try:
                 _ = message["sponsoredConversationMetadata"]
             except:
-                needs_response.append(message)
-    return needs_response
+                unread.append(message)
+    return unread
 
 
-def get_message(message):
+def get_recruiter_message(message):
+    urn = message["entityUrn"].split(":")[-1]
     event = message["events"][0]
     content = event["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
-    return content
+    is_recruiter = filter_for_recruiters(content)
+    
+    if is_recruiter:
+        map = {"urn": urn, "content": content}
+        return map
+    else:
+        map = {"urn": urn, "content": None}
+        return map
+
 
 def filter_for_recruiters(content):
     is_recruiter = False
@@ -55,12 +64,9 @@ def filter_for_recruiters(content):
 
 
 def parse_message(message): 
-    try:
-        subject = message["subject"]
-    except:
-        subject = "No Subject"
+    subject = message.get("subject")
     text = message["attributedBody"]["text"].strip("\n")
-    # print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
+    print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
 
 
 def main():
@@ -77,23 +83,24 @@ def main():
     with open("inbox.txt", "r") as f:
         inbox = json.loads(f.read())["elements"]
 
-    needs_response = get_unread(inbox)
+    unread = get_unread(inbox)
 
-    with open("needs_response.txt", "w") as f:
-        f.write(json.dumps(needs_response, indent=2))
+    with open("unread.txt", "w") as f:
+        f.write(json.dumps(unread, indent=2))
 
     recruiter_messages = []
-    for item in needs_response:
-        message = get_message(item)
-        # print(json.dumps(message, indent=2))
-        is_recruiter = filter_for_recruiters(message)
-        if is_recruiter:
+    for item in unread:
+        message = get_recruiter_message(item)
+        if message == None:
+            pass
+        else:
             recruiter_messages.append(message)
+    # print(json.dumps(recruiter_messages, indent=2))
     
-    # with open("recruiter-messages.txt", "w") as f:
-    #     f.write(json.dumps(recruiter_messages, indent=2))
+    with open("recruiter-messages.txt", "w") as f:
+        f.write(json.dumps(recruiter_messages, indent=2))
 
-    pprint(f"Messages needing response: {len(needs_response)}")
+    pprint(f"Messages needing response: {len(unread)}")
 
 if __name__ == "__main__":
     main()
