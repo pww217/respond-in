@@ -1,4 +1,4 @@
-import os, logging, json
+import os, logging, json, time
 from linkedin_api import Linkedin
 from pprint import pprint
 
@@ -18,38 +18,52 @@ message = content["attributedBody"]["text"]
 """
 
 
-def get_needs_response(inbox):
+def get_unread(inbox):
     """
-    Sorts out already-read, sponsored, or other non-recruiter messages.
-    Returns a list of unread messages from recruiters only
+    Filters out already-read or sponsored messages.
+    Returns a list of unread messages
     """
     needs_response = []
     for message in inbox:
         is_read = message["read"]
         if is_read == False:
             try:
-                for e in message["events"]:
-                    content = e["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
-                    try:
-                        if (
-                            content["customContent"][
-                                "com.linkedin.voyager.messaging.event.message.InmailContent"
-                            ]["inmailProductType"]
-                            == "RECRUITER"
-                        ):
-                            is_recruiter = True
-                            needs_response.append(content)
-                    except KeyError:
-                        is_recruiter = False
-            except KeyError:
-                continue
+                _ = message["sponsoredConversationMetadata"]
+            except:
+                needs_response.append(message)
     return needs_response
 
+
+def parse_events(message):
+    events = []
+    for e in message["events"]:
+        content = e["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
+        events.append(content)
+    print(len(events))
+    return events
+
+    #     try:
+    #         if (
+    #             content["customContent"][
+    #                 "com.linkedin.voyager.messaging.event.message.InmailContent"
+    #             ]["inmailProductType"]
+    #             == "RECRUITER"
+    #         ):
+    #             is_recruiter = True
+
+    #     except KeyError:
+    #         is_recruiter = False
+    # return is_recruiter
+
+
 def parse_message(message):
-    custom_content = message["customContent"]
-    subject = message["subject"]
+    try:
+        subject = message["subject"]
+    except:
+        subject = "No Subject"
     text = message["attributedBody"]["text"].strip("\n")
-    print(f"Subject: {subject}\nText:\n{text}\n")
+    # print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
+
 
 def main():
     # user = os.getenv('LKDIN_USER')
@@ -65,15 +79,17 @@ def main():
     with open("inbox.txt", "r") as f:
         inbox = json.loads(f.read())["elements"]
 
-    needs_response = get_needs_response(inbox)
+    needs_response = get_unread(inbox)
     pprint(f"Messages needing response: {len(needs_response)}")
 
     with open("needs_response.txt", "w") as f:
         f.write(json.dumps(needs_response, indent=2))
 
-    for message in needs_response:
-        parse_message(message)
-       
+    for entry in needs_response:
+        events = parse_events(entry)
+        for e in events:
+            message = parse_message(e)
+
 
 
 if __name__ == "__main__":
