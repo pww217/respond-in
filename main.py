@@ -21,7 +21,7 @@ message = content["attributedBody"]["text"]
 def get_unread(inbox):
     """
     Filters out already-read or sponsored messages.
-    Returns a list of unread messages
+    Returns a list of unread messages.
     """
     needs_response = []
     for message in inbox:
@@ -34,29 +34,27 @@ def get_unread(inbox):
     return needs_response
 
 
-def parse_events(message):
-    events = []
-    for e in message["events"]:
-        content = e["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
-        events.append(content)
-    print(len(events))
-    return events
+def get_message(message):
+    event = message["events"][0]
+    content = event["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
+    return content
 
-    #     try:
-    #         if (
-    #             content["customContent"][
-    #                 "com.linkedin.voyager.messaging.event.message.InmailContent"
-    #             ]["inmailProductType"]
-    #             == "RECRUITER"
-    #         ):
-    #             is_recruiter = True
-
-    #     except KeyError:
-    #         is_recruiter = False
-    # return is_recruiter
+def filter_for_recruiters(content):
+    is_recruiter = False
+    try:
+        if (
+            content["customContent"][
+                "com.linkedin.voyager.messaging.event.message.InmailContent"
+            ]["inmailProductType"]
+            == "RECRUITER"
+        ):
+            is_recruiter = True
+    except KeyError:
+        pass
+    return is_recruiter
 
 
-def parse_message(message):
+def parse_message(message): 
     try:
         subject = message["subject"]
     except:
@@ -80,17 +78,22 @@ def main():
         inbox = json.loads(f.read())["elements"]
 
     needs_response = get_unread(inbox)
-    pprint(f"Messages needing response: {len(needs_response)}")
 
     with open("needs_response.txt", "w") as f:
         f.write(json.dumps(needs_response, indent=2))
 
-    for entry in needs_response:
-        events = parse_events(entry)
-        for e in events:
-            message = parse_message(e)
+    recruiter_messages = []
+    for item in needs_response:
+        message = get_message(item)
+        # print(json.dumps(message, indent=2))
+        is_recruiter = filter_for_recruiters(message)
+        if is_recruiter:
+            recruiter_messages.append(message)
+    
+    # with open("recruiter-messages.txt", "w") as f:
+    #     f.write(json.dumps(recruiter_messages, indent=2))
 
-
+    pprint(f"Messages needing response: {len(needs_response)}")
 
 if __name__ == "__main__":
     main()
