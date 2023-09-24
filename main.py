@@ -1,17 +1,5 @@
-import os, logging, json, time
+import os, json
 from linkedin_api import Linkedin
-from pprint import pprint
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(levelname)s:")
-sh = logging.StreamHandler()
-sh.setFormatter(formatter)
-logger.addHandler(sh)
-
-api_logger = logging.getLogger("linkedin_api")
-api_logger.setLevel(logging.DEBUG)
-
 
 def get_unread(inbox):
     """
@@ -30,8 +18,21 @@ def get_unread(inbox):
                 unread.append(message)
     return unread
 
-def get_sender_name(message):
-    pass
+
+def get_sender_info(message):
+    participants = message["participants"][0]
+    profile = participants["com.linkedin.voyager.messaging.MessagingMember"][
+        "miniProfile"
+    ]
+    fname = profile["firstName"]
+    lname = profile["lastName"]
+    occupation = profile["occupation"]
+    print(
+        f"Name; {fname} {lname}\n\
+Title: {occupation}\n"
+    )
+    return fname, lname, occupation
+
 
 def get_recruiter_message(message):
     """
@@ -40,11 +41,18 @@ def get_recruiter_message(message):
     """
     urn = message["entityUrn"].split(":")[-1]
     event = message["events"][0]
+    fname, lname, occupation = get_sender_info(message)
     content = event["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
     is_recruiter = filter_for_recruiters(content)
 
     if is_recruiter:
-        map = {"urn": urn, "content": content, "fname": fname, "lname": lname}
+        map = {
+            "urn": urn,
+            "fname": fname,
+            "lname": lname,
+            "occupation": occupation,
+            "content": content,
+        }
         return map
     else:
         return None
@@ -74,9 +82,9 @@ def respond_and_mark_read(api, template, message):
     """
     urn = message["urn"]
     content = message["content"]
-    api.send_message(template, conversation_urn_id=urn)
-    api.mark_conversation_as_seen(urn)
-    logger.info(f"Finished transaction for {urn}")
+    # api.send_message(template, conversation_urn_id=urn)
+    # api.mark_conversation_as_seen(urn)
+    print(f"Finished transaction for {urn}")
 
 
 def parse_message(message):
@@ -116,7 +124,7 @@ def main():
         else:
             recruiter_messages.append(message)
 
-    pprint(f"Messages needing response: {len(recruiter_messages)}")
+    print(f"Messages needing response: {len(recruiter_messages)}")
 
     with open("recruiter-messages.txt", "w") as f:
         f.write(json.dumps(recruiter_messages, indent=2))
