@@ -23,26 +23,37 @@ def get_unread(inbox):
         is_read = message["read"]
         if is_read == False:
             try:
+                # Dump any sponsored conversations
                 _ = message["sponsoredConversationMetadata"]
             except:
+                # Append non-sponsored and unread messages
                 unread.append(message)
     return unread
 
+def get_sender_name(message):
+    pass
 
 def get_recruiter_message(message):
+    """
+    Parses out key information such as Urns and actual message content
+    If a recruiter, returns a map of the message content and conversation urn.
+    """
     urn = message["entityUrn"].split(":")[-1]
     event = message["events"][0]
     content = event["eventContent"]["com.linkedin.voyager.messaging.event.MessageEvent"]
     is_recruiter = filter_for_recruiters(content)
 
     if is_recruiter:
-        map = {"urn": urn, "content": content}
+        map = {"urn": urn, "content": content, "fname": fname, "lname": lname}
         return map
     else:
         return None
 
 
 def filter_for_recruiters(content):
+    """
+    Searches for a recruiter InMail message tag to filter out recruiters
+    """
     is_recruiter = False
     try:
         if (
@@ -58,6 +69,9 @@ def filter_for_recruiters(content):
 
 
 def respond_and_mark_read(api, template, message):
+    """
+    The bread and butter, will actually reply to the message and mark it read.
+    """
     urn = message["urn"]
     content = message["content"]
     api.send_message(template, conversation_urn_id=urn)
@@ -66,6 +80,10 @@ def respond_and_mark_read(api, template, message):
 
 
 def parse_message(message):
+    """
+    Pulls out a subject and text of a message
+    Returns None for subject if none is present.
+    """
     subject = message.get("subject")
     text = message["attributedBody"]["text"].strip("\n")
     print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
