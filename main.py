@@ -12,11 +12,6 @@ logger.addHandler(sh)
 api_logger = logging.getLogger("linkedin_api")
 api_logger.setLevel(logging.DEBUG)
 
-"""
-is_sponsored = content["com.linkedin.voyager.messaging.event.message.SponsoredMessageContent"]
-message = content["attributedBody"]["text"]
-"""
-
 
 def get_unread(inbox):
     """
@@ -63,6 +58,13 @@ def filter_for_recruiters(content):
     return is_recruiter
 
 
+def respond_and_mark_read(api, template, message):
+    urn = message["urn"]
+    content = message["content"]
+    #api.send_message(template, conversation_urn_id=urn)
+    #api.mark_conversation_as_seen(urn)
+
+
 def parse_message(message): 
     subject = message.get("subject")
     text = message["attributedBody"]["text"].strip("\n")
@@ -70,11 +72,11 @@ def parse_message(message):
 
 
 def main():
-    # user = os.getenv('LKDIN_USER')
-    # pw = os.getenv('LKDIN_PW')
+    user = os.getenv('LKDIN_USER')
+    pw = os.getenv('LKDIN_PW')
 
-    # # Ideally would improve on the env var method
-    # api = Linkedin(user, pw)
+    # Ideally would improve on the env var method
+    api = Linkedin(user, pw)
 
     # inbox = api.get_conversations()
     # with open('inbox.txt', 'w') as f:
@@ -95,10 +97,15 @@ def main():
             pass
         else:
             recruiter_messages.append(message)
-    # print(json.dumps(recruiter_messages, indent=2))
     
     with open("recruiter-messages.txt", "w") as f:
         f.write(json.dumps(recruiter_messages, indent=2))
+
+    with open("template.txt") as f:
+        template = f.read()
+    print(template)
+    for item in recruiter_messages:
+        respond_and_mark_read(api, template, item)
 
     pprint(f"Messages needing response: {len(unread)}")
 
