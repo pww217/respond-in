@@ -72,11 +72,13 @@ def filter_for_recruiters(content):
 
 def respond_and_mark_read(api, template, message):
     urn = message["urn"]
-    content = message["content"]
+    # content = message["content"]
     fname = message["fname"]
     lname = message["lname"]
-    # api.send_message(template, conversation_urn_id=urn)
-    # api.mark_conversation_as_seen(urn)
+    personalized = template.format(fname=fname)
+    # print(personalized)
+    api.send_message(personalized, conversation_urn_id=urn)
+    api.mark_conversation_as_seen(urn)
     print(f"Finished transaction for message from {fname} {lname}")
 
 
