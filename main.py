@@ -1,11 +1,8 @@
-import os, json
+import json
 from linkedin_api import Linkedin
 
+
 def get_unread(inbox):
-    """
-    Filters out already-read or sponsored messages.
-    Returns a list of unread messages.
-    """
     unread = []
     for message in inbox:
         is_read = message["read"]
@@ -27,10 +24,10 @@ def get_sender_info(message):
     fname = profile["firstName"]
     lname = profile["lastName"]
     occupation = profile["occupation"]
-    print(
-        f"Name; {fname} {lname}\n\
-Title: {occupation}\n"
-    )
+    #     print(
+    #         f"Name; {fname} {lname}\n\
+    # Title: {occupation}\n"
+    #     )
     return fname, lname, occupation
 
 
@@ -59,9 +56,6 @@ def get_recruiter_message(message):
 
 
 def filter_for_recruiters(content):
-    """
-    Searches for a recruiter InMail message tag to filter out recruiters
-    """
     is_recruiter = False
     try:
         if (
@@ -77,9 +71,6 @@ def filter_for_recruiters(content):
 
 
 def respond_and_mark_read(api, template, message):
-    """
-    The bread and butter, will actually reply to the message and mark it read.
-    """
     urn = message["urn"]
     content = message["content"]
     # api.send_message(template, conversation_urn_id=urn)
@@ -88,33 +79,23 @@ def respond_and_mark_read(api, template, message):
 
 
 def parse_message(message):
-    """
-    Pulls out a subject and text of a message
-    Returns None for subject if none is present.
-    """
     subject = message.get("subject")
     text = message["attributedBody"]["text"].strip("\n")
     print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
 
 
 def main():
-    user = os.getenv("LKDIN_USER")
-    pw = os.getenv("LKDIN_PW")
-
-    # Ideally would improve on the env var method
+    with open("creds.txt") as f:
+        creds = json.loads(f.read())
+    user = creds["LKDIN_USER"]
+    pw = creds["LKDIN_PW"]
     api = Linkedin(user, pw)
 
     inbox = api.get_conversations()["elements"]
     with open("inbox.txt", "w") as f:
         f.write(json.dumps(inbox, indent=2))
 
-    # with open("inbox.txt", "r") as f:
-    #     inbox = json.loads(f.read())["elements"]
-
     unread = get_unread(inbox)
-
-    # with open("unread.txt", "w") as f:
-    #     f.write(json.dumps(unread, indent=2))
 
     recruiter_messages = []
     for item in unread:
