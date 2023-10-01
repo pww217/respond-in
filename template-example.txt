@@ -1,0 +1,9 @@
+Hi {fname},
+
+Thank you for looking at this repo.
+
+Rename this file to template.txt to use it in the script.
+
+Thanks,
+
+Peter

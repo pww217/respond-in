@@ -89,11 +89,14 @@ def respond_and_mark_read(api, template, message):
 
 
 def main():
-    with open("creds.txt") as f:
+    with open("creds.json") as f:
         creds = json.loads(f.read())
     user = creds["LKDIN_USER"]
     pw = creds["LKDIN_PW"]
     api = Linkedin(user, pw)
+
+    with open("template.txt") as f:
+        template = f.read()
 
     inbox = api.get_conversations()["elements"]
     with open("inbox.txt", "w") as f:
@@ -111,11 +114,6 @@ def main():
 
     print(f"Messages needing response: {len(recruiter_messages)}\n")
 
-    with open("recruiter-messages.txt", "w") as f:
-        f.write(json.dumps(recruiter_messages, indent=2))
-
-    with open("template.txt") as f:
-        template = f.read()
     for item in recruiter_messages:
         respond_and_mark_read(api, template, item)
 

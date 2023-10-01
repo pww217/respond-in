@@ -1,6 +1,9 @@
 .vars
 .vscode
-*.txt
+template.txt
+unread.txt
+inbox.txt
+creds.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
