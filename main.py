@@ -76,16 +76,16 @@ def respond_and_mark_read(api, template, message):
     fname = message["fname"]
     lname = message["lname"]
     personalized = template.format(fname=fname)
-    # print(personalized)
+    # print(f"{personalized}\n---------\n")
     api.send_message(personalized, conversation_urn_id=urn)
     api.mark_conversation_as_seen(urn)
     print(f"Finished transaction for message from {fname} {lname}")
 
 
-def parse_message(message):
-    subject = message.get("subject")
-    text = message["attributedBody"]["text"].strip("\n")
-    print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
+# def parse_message(message):
+#     subject = message.get("subject")
+#     text = message["attributedBody"]["text"].strip("\n")
+#     print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
 
 
 def main():
@@ -109,7 +109,7 @@ def main():
         else:
             recruiter_messages.append(message)
 
-    print(f"Messages needing response: {len(recruiter_messages)}")
+    print(f"Messages needing response: {len(recruiter_messages)}\n")
 
     with open("recruiter-messages.txt", "w") as f:
         f.write(json.dumps(recruiter_messages, indent=2))
