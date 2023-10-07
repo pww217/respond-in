@@ -1,6 +1,15 @@
-import json
+import json, logging
 from linkedin_api import Linkedin
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(levelname)s:")
+sh = logging.StreamHandler()
+sh.setFormatter(formatter)
+logger.addHandler(sh)
+
+api_logger = logging.getLogger("linkedin_api")
+api_logger.setLevel(logging.DEBUG)
 
 def get_unread(inbox):
     unread = []
@@ -88,6 +97,24 @@ def respond_and_mark_read(api, template, message):
 #     print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
 
 
+def handle_invites(api, limit=50, response="accept"):
+    invites = api.get_invitations(limit=limit)
+    for i in invites:
+        from_member = i.get("fromMember")
+        urn = i["entityUrn"]
+        secret = i["sharedSecret"]
+        # Reject invites with no sender/for sponsored pages
+        if from_member == None:
+            # (invitation_entity_urn, invitation_shared_secret, action='accept')
+            result = api.reply_invitation(urn, secret, action="reject")
+            print(f"Rejected invite: {result} for Urn: {urn}")
+        else:
+            fname = from_member["firstName"]
+            lname = from_member["lastName"]
+            result = api.reply_invitation(urn, secret, action=response)
+            print(f"Accepted invite: {result} from {fname} {lname}")
+
+
 def main():
     with open("creds.json") as f:
         creds = json.loads(f.read())
@@ -98,24 +125,26 @@ def main():
     with open("template.txt") as f:
         template = f.read()
 
-    inbox = api.get_conversations()["elements"]
-    with open("inbox.txt", "w") as f:
-        f.write(json.dumps(inbox, indent=2))
+    # inbox = api.get_conversations()["elements"]
+    # with open("inbox.txt", "w") as f:
+    #     f.write(json.dumps(inbox, indent=2))
 
-    unread = get_unread(inbox)
+    # unread = get_unread(inbox)
 
-    recruiter_messages = []
-    for item in unread:
-        message = get_recruiter_message(item)
-        if message == None:
-            pass
-        else:
-            recruiter_messages.append(message)
+    # recruiter_messages = []
+    # for item in unread:
+    #     message = get_recruiter_message(item)
+    #     if message == None:
+    #         pass
+    #     else:
+    #         recruiter_messages.append(message)
 
-    print(f"Messages needing response: {len(recruiter_messages)}\n")
+    # print(f"Messages needing response: {len(recruiter_messages)}\n")
 
-    for item in recruiter_messages:
-        respond_and_mark_read(api, template, item)
+    # for item in recruiter_messages:
+    #     respond_and_mark_read(api, template, item)
+
+    pending_invites = handle_invites(api)
 
 
 if __name__ == "__main__":
