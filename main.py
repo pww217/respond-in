@@ -101,18 +101,18 @@ def handle_invites(api, limit=50, response="accept"):
     invites = api.get_invitations(limit=limit)
     for i in invites:
         from_member = i.get("fromMember")
-        urn = i["entityUrn"]
+        urn = i["entityUrn"] # Alternative "mailboxItemId"
         secret = i["sharedSecret"]
         # Reject invites with no sender/for sponsored pages
         if from_member == None:
             # (invitation_entity_urn, invitation_shared_secret, action='accept')
             result = api.reply_invitation(urn, secret, action="reject")
-            print(f"Rejected invite: {result} for Urn: {urn}")
+            print(f"Rejected invite: {result} for urn: {urn}, secret: {secret}")
         else:
             fname = from_member["firstName"]
             lname = from_member["lastName"]
             result = api.reply_invitation(urn, secret, action=response)
-            print(f"Accepted invite: {result} from {fname} {lname}")
+            print(f"Accepted invite: {result} from {fname} {lname}, urn: {urn}, secret: {secret}")
 
 
 def main():
@@ -120,7 +120,7 @@ def main():
         creds = json.loads(f.read())
     user = creds["LKDIN_USER"]
     pw = creds["LKDIN_PW"]
-    api = Linkedin(user, pw)
+    api = Linkedin(user, pw, debug=True)
 
     with open("template.txt") as f:
         template = f.read()
