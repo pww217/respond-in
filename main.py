@@ -100,13 +100,13 @@ def respond_and_mark_read(api, template, message):
 
 def handle_invites(api, limit=50, response="accept"):
     invites = api.get_invitations(limit=limit)
+    print(f"Number of pending invitations: {len(invites)}\n")
     for i in invites:
         from_member = i.get("fromMember")
         urn = i["entityUrn"]  # Alternative "mailboxItemId"
         secret = i["sharedSecret"]
         # Reject invites with no sender/for sponsored pages
         if from_member == None:
-            # (invitation_entity_urn, invitation_shared_secret, action='accept')
             result = api.reply_invitation(urn, secret, action="reject")
             print(f"Rejected invite: {result} for urn: {urn}, secret: {secret}")
         else:
@@ -124,7 +124,7 @@ def main():
         creds = json.loads(f.read())
     user = creds["LKDIN_USER"]
     pw = creds["LKDIN_PW"]
-    api = Linkedin(user, pw, debug=False)
+    api = Linkedin(user, pw, debug=True)
 
     result = handle_invites(api)
     print(f"{result}\n")
@@ -150,7 +150,7 @@ def main():
 
     for item in recruiter_messages:
         respond_and_mark_read(api, template, item)
-    print("All unread messages responded to.")
+    print("\nAll unread messages responded to.")
 
 
 if __name__ == "__main__":
