@@ -1,5 +1,15 @@
-import json
+import json, logging
 from linkedin_api import Linkedin
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter("%(levelname)s:")
+sh = logging.StreamHandler()
+sh.setFormatter(formatter)
+logger.addHandler(sh)
+
+api_logger = logging.getLogger("linkedin_api")
+api_logger.setLevel(logging.INFO)
 
 
 def get_unread(inbox):
@@ -88,12 +98,36 @@ def respond_and_mark_read(api, template, message):
 #     print(f"Subject: {subject}\n\n{text}\n-----------------------------------")
 
 
+def handle_invites(api, limit=50, response="accept"):
+    invites = api.get_invitations(limit=limit)
+    print(f"Number of pending invitations: {len(invites)}\n")
+    for i in invites:
+        from_member = i.get("fromMember")
+        urn = i["entityUrn"]  # Alternative "mailboxItemId"
+        secret = i["sharedSecret"]
+        # Reject invites with no sender/for sponsored pages
+        if from_member == None:
+            result = api.reply_invitation(urn, secret, action="reject")
+            print(f"Rejected invite: {result} for urn: {urn}, secret: {secret}")
+        else:
+            fname = from_member["firstName"]
+            lname = from_member["lastName"]
+            result = api.reply_invitation(urn, secret, action=response)
+            print(
+                f"Accepted invite: {result} from {fname} {lname}, urn: {urn}, secret: {secret}"
+            )
+    return "Successfully handled all pending invitations."
+
+
 def main():
     with open("creds.json") as f:
         creds = json.loads(f.read())
     user = creds["LKDIN_USER"]
     pw = creds["LKDIN_PW"]
-    api = Linkedin(user, pw)
+    api = Linkedin(user, pw, debug=True)
+
+    result = handle_invites(api)
+    print(f"{result}\n")
 
     with open("template.txt") as f:
         template = f.read()
@@ -116,6 +150,7 @@ def main():
 
     for item in recruiter_messages:
         respond_and_mark_read(api, template, item)
+    print("\nAll unread messages responded to.")
 
 
 if __name__ == "__main__":
