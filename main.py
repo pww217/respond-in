@@ -107,7 +107,7 @@ def handle_invites(api, limit=50, response="accept"):
         secret = i["sharedSecret"]
         # Reject invites with no sender/for sponsored pages
         if from_member == None:
-            result = api.reply_invitation(urn, secret, action="reject")
+            result = api.reply_invitation(urn, secret, action="ignore")
             print(f"Rejected invite: {result} for urn: {urn}, secret: {secret}")
         else:
             fname = from_member["firstName"]
